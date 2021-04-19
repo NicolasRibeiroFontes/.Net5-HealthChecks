@@ -1,3 +1,4 @@
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,13 @@ namespace DotNet5_HealthChecks
 			{
 				c.SwaggerDoc("v1", new OpenApiInfo { Title = "DotNet5_HealthChecks", Version = "v1" });
 			});
+
+			services.AddHealthChecks()
+				.AddSqlServer(Configuration.GetConnectionString("SqlServer"),
+					name: "sqlserver", tags: new string[] { "db", "data" });
+
+			services.AddHealthChecksUI()
+				.AddInMemoryStorage();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -65,6 +73,19 @@ namespace DotNet5_HealthChecks
 						await context.Response.WriteAsync(result);
 					}
 				});
+
+			// Generated the endpoint which will return the needed data
+			app.UseHealthChecks("/healthchecks-data-ui", new HealthCheckOptions()
+			{
+				Predicate = _ => true,
+				ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+			});
+
+			// Activate the dashboard for UI
+			app.UseHealthChecksUI(options =>
+			{
+				options.UIPath = "/monitor";
+			});
 
 			app.UseHttpsRedirection();
 
