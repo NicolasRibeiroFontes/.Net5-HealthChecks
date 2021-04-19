@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +12,8 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DotNet5_HealthChecks
@@ -27,6 +31,7 @@ namespace DotNet5_HealthChecks
 		public void ConfigureServices(IServiceCollection services)
 		{
 
+			services.AddHealthChecks();
 			services.AddControllers();
 			services.AddSwaggerGen(c =>
 			{
@@ -43,6 +48,23 @@ namespace DotNet5_HealthChecks
 				app.UseSwagger();
 				app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DotNet5_HealthChecks v1"));
 			}
+
+			app.UseHealthChecks("/status",
+				new HealthCheckOptions()
+				{
+					ResponseWriter = async (context, report) =>
+					{
+						var result = JsonSerializer.Serialize(
+							new
+							{
+								currentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+								statusApplication = report.Status.ToString(),
+							});
+
+						context.Response.ContentType = MediaTypeNames.Application.Json;
+						await context.Response.WriteAsync(result);
+					}
+				});
 
 			app.UseHttpsRedirection();
 
