@@ -25,3 +25,13 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: dotnet publish
       run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+    - name: Azure Login
+      uses: azure/login@v1.1
+      with:
+        creds: ${{ secrets.AZURE_DEPLOY }}
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v1
+      with:
+        app-name: "nicolas-healthcheck"
+        slot-name: "production"
+        package: ${{env.DOTNET_ROOT}}/myapp
