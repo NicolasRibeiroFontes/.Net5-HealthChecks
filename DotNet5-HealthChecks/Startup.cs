@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
@@ -53,9 +54,10 @@ namespace DotNet5_HealthChecks
 			if (env.IsDevelopment())
 			{
 				app.UseDeveloperExceptionPage();
-				app.UseSwagger();
-				app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DotNet5_HealthChecks v1"));
+				
 			}
+			app.UseSwagger();
+			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DotNet5_HealthChecks v1"));
 
 			app.UseHealthChecks("/status",
 				new HealthCheckOptions()
@@ -67,7 +69,12 @@ namespace DotNet5_HealthChecks
 							{
 								currentTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
 								statusApplication = report.Status.ToString(),
-							});
+                                healthChecks = report.Entries.Select(e => new
+                                {
+                                    check = e.Key,
+                                    status = Enum.GetName(typeof(HealthStatus), e.Value.Status)
+                                })
+                            });
 
 						context.Response.ContentType = MediaTypeNames.Application.Json;
 						await context.Response.WriteAsync(result);
